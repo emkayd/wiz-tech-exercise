@@ -1,0 +1,13 @@
+# Terraform
+infra/.terraform/
+infra/*.tfstate
+infra/*.tfstate.*
+infra/.terraform.lock.hcl
+
+# Node/npm
+app/node_modules/
+npm-debug.log
+
+# OS junk
+.DS_Store
+Thumbs.db

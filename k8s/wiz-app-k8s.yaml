@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: wiz-app
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: wiz-app-sa
+  namespace: wiz-app
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: wiz-app-cluster-admin-binding
+subjects:
+  - kind: ServiceAccount
+    name: wiz-app-sa
+    namespace: wiz-app
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiz-mongo-app-svc
+  namespace: wiz-app
+spec:
+  type: NodePort
+  selector:
+    app: wiz-mongo-app
+  ports:
+    - port: 80          # service port
+      targetPort: 3000  # container port
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiz-mongo-app
+  namespace: wiz-app
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: wiz-mongo-app
+  template:
+    metadata:
+      labels:
+        app: wiz-mongo-app
+    spec:
+      serviceAccountName: wiz-app-sa   # Requirement #5 (cluster-admin binding above)
+      containers:
+        - name: wiz-mongo-app
+          image: minookarthik/wiz-mongo-app:v5
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+          env:
+            - name: MONGO_URI          # Requirement #2 – access via env var
+              valueFrom:
+                secretKeyRef:
+                  name: wiz-mongo-secret
+                  key: mongo-uri
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wiz-mongo-app-ingress
+  namespace: wiz-app
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+spec:
+  ingressClassName: alb
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wiz-mongo-app-svc
+                port:
+                  number: 80
