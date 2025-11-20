@@ -1,0 +1,72 @@
+name: Build and Deploy App
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "app/**"
+      - ".github/workflows/app-ci.yml"
+
+env:
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/wiz-mongo-app
+
+jobs:
+  build-test-scan-deploy:
+    name: Build → Scan → Push → Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "18"
+
+      - name: Install Dependencies
+        working-directory: app
+        run: npm ci
+
+      ### --- TRIVY FILESYSTEM SCAN ---
+      - name: Trivy FS scan (app source)
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          scan-ref: ./app
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0   # Don't break pipeline yet; demo-friendly
+
+      - name: Build Docker image
+        working-directory: app
+        run: docker build -t $IMAGE_NAME:latest .
+
+      ### --- TRIVY IMAGE SCAN ---
+      - name: Trivy image scan
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          image-ref: ${{ env.IMAGE_NAME }}:latest
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Push image
+        run: docker push $IMAGE_NAME:latest
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/wiz-github-terraform-role
+          aws-region: us-east-1
+
+      - name: Update Kubernetes Deployment
+        run: |
+          aws eks update-kubeconfig --region us-east-1 --name wiz-eks-cluster
+          kubectl set image deployment/wiz-mongo-app wiz-mongo-app=$IMAGE_NAME:latest -n wiz-app

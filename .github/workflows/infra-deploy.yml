@@ -1,56 +1,59 @@
 name: Terraform Deploy
 
 on:
-  workflow_dispatch:    # manual trigger from GitHub UI
   push:
-    branches: ["main"]
+    branches: [ "main" ]
     paths:
       - "infra/**"
+      - ".github/workflows/infra-deploy.yml"
 
 env:
-  AWS_REGION: us-east-1
   TF_WORKING_DIR: infra
 
 jobs:
-  terraform-deploy:
+  terraform:
     runs-on: ubuntu-latest
+    name: Terraform Validate → Scan → Plan → Apply
 
     permissions:
-      id-token: write    # needed for GitHub OIDC
+      id-token: write
       contents: read
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configure AWS credentials via OIDC
+      ### --- TRIVY FILESYSTEM SCAN (TERRAFORM CODE) ---
+      - name: Run Trivy scan on Terraform
+        uses: aquasecurity/trivy-action@0.20.0
+        with:
+          scan-type: fs
+          scan-ref: ./infra
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0  # Not breaking pipeline; demo-friendly
+
+      - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::682033491815:role/wiz-github-terraform-role
-          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/wiz-github-terraform-role
+          aws-region: us-east-1
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 1.8.5
 
       - name: Terraform Init
         working-directory: ${{ env.TF_WORKING_DIR }}
-        run: terraform init -input=false
+        run: terraform init
+
+      - name: Terraform FMT Check
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform fmt -check
 
       - name: Terraform Plan
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform plan -input=false -out=tfplan
 
-      # Optional: upload plan artifact so you can inspect it
-      - name: Upload plan
-        uses: actions/upload-artifact@v4
-        with:
-          name: tfplan
-          path: infra/tfplan
-
-      # Apply only on push to main, NOT on manual workflow_dispatch by default
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
         working-directory: ${{ env.TF_WORKING_DIR }}
         run: terraform apply -input=false -auto-approve tfplan
