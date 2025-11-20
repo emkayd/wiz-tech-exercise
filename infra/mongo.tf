@@ -51,7 +51,7 @@ resource "aws_instance" "mongo" {
   associate_public_ip_address = true                   # PUBLIC IP (intentional)
   vpc_security_group_ids      = [aws_security_group.mongo_sg.id]
   key_name                    = var.mongo_key_name
-  iam_instance_profile        = aws_iam_instance_profile.mongo_ec2_instance_profile.name
+  iam_instance_profile        = wiz-mongo-ec2-role
 
   tags = {
     Name = "wiz-mongo-db"
