@@ -1,4 +1,7 @@
 //app.js 
+
+const fs = require('fs');
+const path = require('path');
 const express = require("express");
 const { MongoClient, ObjectId } = require("mongodb");
 
@@ -6,6 +9,26 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 const mongoUri = process.env.MONGO_URI;
+
+function readWizExercise() {
+  const wizPath = path.join(__dirname, 'wizexercise.txt');
+  const result = {
+    exists: false,
+    content: null,
+    error: null,
+  };
+
+  try {
+    if (fs.existsSync(wizPath)) {
+      result.exists = true;
+      result.content = fs.readFileSync(wizPath, 'utf8').trim();
+    }
+  } catch (err) {
+    result.error = err.message;
+  }
+
+  return result;
+}
 
 if (!mongoUri) {
   console.error("MONGO_URI environment variable is not set. Exiting.");
@@ -96,13 +119,17 @@ function renderMongoError(res, message) {
 }
 
 // Health endpoint (for demo & checks)
-app.get("/healthz", async (req, res) => {
-  if (!mongoClient || !db || !findingsCollection) {
-    return res.status(500).json({
-      status: "error",
-      mongoConnected: false,
-    });
-  }
+app.get('/healthz', (req, res) => {
+  const wiz = readWizExercise();
+
+  res.json({
+    status: 'OK',
+    mongoConnected,          // you already track this bool in your app
+    wizFileExists: wiz.exists,
+    wizexerciseName: wiz.content,
+  });
+});
+
 
   try {
     await db.command({ ping: 1 });
@@ -122,14 +149,23 @@ app.get("/healthz", async (req, res) => {
 });
 
 // Diagnostics JSON (nice for demo)
-app.get("/diagnostics", async (req, res) => {
-  const podName = process.env.HOSTNAME || null;
+app.get('/diagnostics', (req, res) => {
+  const wiz = readWizExercise();
 
-  let mongoStatus = {
-    connected: false,
-    dbName: null,
-    count: null,
-  };
+  res.json({
+    status: 'OK',
+    mongoConnected,
+    wizexercise: wiz,
+    environment: {
+      nodeVersion: process.version,
+      pid: process.pid,
+      env: {
+        NODE_ENV: process.env.NODE_ENV || null,
+        MONGO_URI_PRESENT: !!process.env.MONGO_URI,
+      },
+    },
+  });
+});
 
   if (db && findingsCollection) {
     try {
