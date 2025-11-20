@@ -59,17 +59,18 @@ spec:
           ports:
             - containerPort: 3000
           env:
-            - name: MONGO_URI          # Requirement #2 – access via env var
-              valueFrom:
-                secretKeyRef:
-                  name: wiz-mongo-secret
-                  key: mongo-uri
-		# New: expose versions as diagnostics labels
-	          - name: MONGO_VERSION
-        	    value: "4.4.29"          # <--- put your actual Mongo version here
+          - name: MONGO_URI
+            valueFrom:
+              secretKeyRef:
+                name: wiz-mongo-secret
+                key: mongo-uri
 
-	          - name: MONGO_HOST_OS
-        	    value: "Ubuntu 20.04 LTS"  # <--- put your actual Ubuntu version here
+          # New: expose versions as diagnostics labels
+          - name: MONGO_VERSION
+            value: "4.4.29"          # <--- put your actual Mongo version here
+
+          - name: MONGO_HOST_OS
+            value: "Ubuntu 20.04 LTS"  # <--- put your actual Ubuntu version here
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
