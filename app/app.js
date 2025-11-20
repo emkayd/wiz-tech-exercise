@@ -131,23 +131,6 @@ app.get('/healthz', (req, res) => {
 });
 
 
-  try {
-    await db.command({ ping: 1 });
-    return res.json({
-      status: "ok",
-      mongoConnected: true,
-      dbName: db.databaseName,
-    });
-  } catch (err) {
-    console.warn("Mongo ping failed:", err.message);
-    return res.status(500).json({
-      status: "error",
-      mongoConnected: false,
-      error: err.message,
-    });
-  }
-});
-
 // Diagnostics JSON (nice for demo)
 app.get('/diagnostics', (req, res) => {
   const wiz = readWizExercise();
@@ -163,37 +146,6 @@ app.get('/diagnostics', (req, res) => {
         NODE_ENV: process.env.NODE_ENV || null,
         MONGO_URI_PRESENT: !!process.env.MONGO_URI,
       },
-    },
-  });
-});
-
-  if (db && findingsCollection) {
-    try {
-      const ping = await db.command({ ping: 1 });
-      if (ping.ok === 1) {
-        const count = await findingsCollection.countDocuments();
-        mongoStatus = {
-          connected: true,
-          dbName: db.databaseName,
-          count,
-        };
-      }
-    } catch (err) {
-      mongoStatus = {
-        connected: false,
-        dbName: db?.databaseName || null,
-        count: null,
-        error: err.message,
-      };
-    }
-  }
-
-  res.json({
-    status: mongoStatus.connected ? "ok" : "error",
-    mongo: mongoStatus,
-    container: {
-      podName,
-      nodeEnv: process.env.NODE_ENV || null,
     },
   });
 });
