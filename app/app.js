@@ -132,23 +132,52 @@ app.get('/healthz', (req, res) => {
 
 
 // Diagnostics JSON (nice for demo)
-app.get('/diagnostics', (req, res) => {
+app.get('/diagnostics', async (req, res) => {
   const wiz = readWizExercise();
+  const mongoDiag = await getMongoDiagnostics();
 
   res.json({
-    status: 'OK',
+    status: "OK",
     mongoConnected,
+    mongoDiagnostics: mongoDiag,
     wizexercise: wiz,
     environment: {
       nodeVersion: process.version,
       pid: process.pid,
       env: {
         NODE_ENV: process.env.NODE_ENV || null,
-        MONGO_URI_PRESENT: !!process.env.MONGO_URI,
-      },
-    },
+        MONGO_URI_PRESENT: !!process.env.MONGO_URI
+      }
+    }
   });
 });
+
+async function getMongoDiagnostics() {
+  if (!mongoConnected || !db) {
+    return { connected: false };
+  }
+
+  try {
+    const admin = db.admin();
+
+    // Get MongoDB server info
+    const serverInfo = await admin.serverInfo();
+
+    // Get Mongo host OS info
+    const serverStatus = await admin.serverStatus();
+
+    return {
+      connected: true,
+      mongoVersion: serverInfo.version,
+      gitVersion: serverInfo.gitVersion,
+      os: serverStatus.os,   // contains type, name, version
+    };
+
+  } catch (err) {
+    return { connected: false, error: err.message };
+  }
+}
+
 
 // List all findings (home page)
 app.get("/", async (req, res) => {
