@@ -51,10 +51,12 @@ resource "aws_instance" "mongo" {
   associate_public_ip_address = true                   # PUBLIC IP (intentional)
   vpc_security_group_ids      = [aws_security_group.mongo_sg.id]
   key_name                    = var.mongo_key_name
+  iam_instance_profile        = aws_iam_instance_profile.mongo_ec2_instance_profile.name
 
   tags = {
     Name = "wiz-mongo-db"
     Role = "mongo-db"
+
   }
 
   # (AMI is pre-baked with Mongo config from your previous work)

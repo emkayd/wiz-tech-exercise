@@ -31,3 +31,8 @@ variable "mongo_key_name" {
   description = "wiz-interview-key1"
   type        = string
 }
+
+variable "mongo_backup_bucket_name" {
+  description = "Name of the S3 bucket used for MongoDB backups"
+  type        = string
+}
