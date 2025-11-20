@@ -1,0 +1,56 @@
+name: Terraform Deploy
+
+on:
+  workflow_dispatch:    # manual trigger from GitHub UI
+  push:
+    branches: ["main"]
+    paths:
+      - "infra/**"
+
+env:
+  AWS_REGION: us-east-1
+  TF_WORKING_DIR: infra
+
+jobs:
+  terraform-deploy:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write    # needed for GitHub OIDC
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::682033491815:role/wiz-github-terraform-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.8.5
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init -input=false
+
+      - name: Terraform Plan
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -input=false -out=tfplan
+
+      # Optional: upload plan artifact so you can inspect it
+      - name: Upload plan
+        uses: actions/upload-artifact@v4
+        with:
+          name: tfplan
+          path: infra/tfplan
+
+      # Apply only on push to main, NOT on manual workflow_dispatch by default
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main'
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -input=false -auto-approve tfplan
