@@ -33,11 +33,14 @@ jobs:
           ignore-unfixed: true
           exit-code: 0  # Not breaking pipeline; demo-friendly
 
-      - name: Configure AWS Credentials
+            - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/wiz-github-terraform-role
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: us-east-1
+
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
