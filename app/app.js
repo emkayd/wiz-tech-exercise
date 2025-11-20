@@ -132,14 +132,17 @@ app.get('/healthz', (req, res) => {
 
 
 // Diagnostics JSON (nice for demo)
-app.get('/diagnostics', async (req, res) => {
+app.get('/diagnostics', (req, res) => {
   const wiz = readWizExercise();
-  const mongoDiag = await getMongoDiagnostics();
 
   res.json({
     status: "OK",
     mongoConnected,
-    mongoDiagnostics: mongoDiag,
+    mongoDiagnostics: {
+      connected: mongoConnected,
+      version: process.env.MONGO_VERSION || "unknown",
+      hostOS: process.env.MONGO_HOST_OS || "unknown"
+    },
     wizexercise: wiz,
     environment: {
       nodeVersion: process.version,
@@ -152,31 +155,6 @@ app.get('/diagnostics', async (req, res) => {
   });
 });
 
-async function getMongoDiagnostics() {
-  if (!mongoConnected || !db) {
-    return { connected: false };
-  }
-
-  try {
-    const admin = db.admin();
-
-    // Get MongoDB server info
-    const serverInfo = await admin.serverInfo();
-
-    // Get Mongo host OS info
-    const serverStatus = await admin.serverStatus();
-
-    return {
-      connected: true,
-      mongoVersion: serverInfo.version,
-      gitVersion: serverInfo.gitVersion,
-      os: serverStatus.os,   // contains type, name, version
-    };
-
-  } catch (err) {
-    return { connected: false, error: err.message };
-  }
-}
 
 
 // List all findings (home page)
