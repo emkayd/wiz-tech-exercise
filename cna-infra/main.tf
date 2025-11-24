@@ -89,3 +89,13 @@ module "access_analyzer" {
 
   aws_region = var.aws_region
 }
+
+# ------------------------
+# WAF (Web Application Firewall)
+# ------------------------
+module "waf" {
+  source = "./modules/waf"
+
+  aws_region = var.aws_region
+  alb_arn    = var.alb_arn
+}

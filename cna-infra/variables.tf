@@ -24,3 +24,8 @@ variable "eks_vpc_id" {
   description = "VPC ID where EKS/Mongo live (from main infra outputs)"
   type        = string
 }
+
+variable "alb_arn" {
+  description = "ARN of the Application Load Balancer to protect with WAF"
+  type        = string
+}

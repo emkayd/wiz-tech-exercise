@@ -4,3 +4,4 @@ cloudtrail_bucket_name = "wiz-cna-cloudtrail-logs-682033491815"
 config_bucket_name     = "wiz-cna-config-logs-682033491815"
 
 eks_vpc_id = "vpc-0bbff36b63c7d2a04"
+alb_arn    = "arn:aws:elasticloadbalancing:us-east-1:682033491815:loadbalancer/app/k8s-wizapp-wizmongo-311815bd8e/5caa57e01d1db682"

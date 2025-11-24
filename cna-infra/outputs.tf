@@ -57,3 +57,24 @@ output "access_analyzer_name" {
   description = "Name of the IAM Access Analyzer"
   value       = module.access_analyzer.analyzer_name
 }
+
+# WAF
+output "waf_web_acl_id" {
+  description = "ID of the WAF Web ACL"
+  value       = module.waf.web_acl_id
+}
+
+output "waf_web_acl_arn" {
+  description = "ARN of the WAF Web ACL"
+  value       = module.waf.web_acl_arn
+}
+
+output "waf_web_acl_name" {
+  description = "Name of the WAF Web ACL"
+  value       = module.waf.web_acl_name
+}
+
+output "waf_web_acl_capacity" {
+  description = "Web ACL capacity units (WCU) used by WAF"
+  value       = module.waf.web_acl_capacity
+}
