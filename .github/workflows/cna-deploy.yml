@@ -1,0 +1,45 @@
+name: CNA Security Deployment
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - "cna-infra/**"
+  workflow_dispatch:
+
+jobs:
+  deploy-security:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::682033491815:role/wiz-github-terraform-role
+          aws-region: us-east-1
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        working-directory: cna-infra
+        run: terraform init
+
+      - name: Terraform Validate
+        working-directory: cna-infra
+        run: terraform validate
+
+      - name: Terraform Plan
+        working-directory: cna-infra
+        run: terraform plan -input=false
+
+      - name: Terraform Apply
+        working-directory: cna-infra
+        run: terraform apply -auto-approve
