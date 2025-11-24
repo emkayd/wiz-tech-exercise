@@ -119,12 +119,28 @@ function renderMongoError(res, message) {
 }
 
 // Health endpoint (for demo & checks)
-app.get('/healthz', (req, res) => {
+app.get('/healthz', async (req, res) => {
   const wiz = readWizExercise();
+  let actualMongoConnected = false;
 
-  res.json({
-    status: 'OK',
-    mongoConnected,          // you already track this bool in your app
+  // Actively test MongoDB connection with ping
+  if (mongoClient) {
+    try {
+      await mongoClient.db().admin().ping();
+      actualMongoConnected = true;
+      mongoConnected = true;
+    } catch (err) {
+      console.error("MongoDB ping failed in /healthz:", err.message);
+      actualMongoConnected = false;
+      mongoConnected = false;
+    }
+  }
+
+  const statusCode = actualMongoConnected ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: actualMongoConnected ? 'OK' : 'UNAVAILABLE',
+    mongoConnected: actualMongoConnected,
     wizFileExists: wiz.exists,
     wizexerciseName: wiz.content,
   });
@@ -132,14 +148,30 @@ app.get('/healthz', (req, res) => {
 
 
 // Diagnostics JSON (nice for demo)
-app.get('/diagnostics', (req, res) => {
+app.get('/diagnostics', async (req, res) => {
   const wiz = readWizExercise();
+  let actualMongoConnected = false;
 
-  res.json({
-    status: "OK",
-    mongoConnected,
+  // Actively test MongoDB connection with ping
+  if (mongoClient) {
+    try {
+      await mongoClient.db().admin().ping();
+      actualMongoConnected = true;
+      mongoConnected = true;
+    } catch (err) {
+      console.error("MongoDB ping failed in /diagnostics:", err.message);
+      actualMongoConnected = false;
+      mongoConnected = false;
+    }
+  }
+
+  const statusCode = actualMongoConnected ? 200 : 503;
+
+  res.status(statusCode).json({
+    status: actualMongoConnected ? "OK" : "UNAVAILABLE",
+    mongoConnected: actualMongoConnected,
     mongoDiagnostics: {
-      connected: mongoConnected,
+      connected: actualMongoConnected,
       version: process.env.MONGO_VERSION || "unknown",
       hostOS: process.env.MONGO_HOST_OS || "unknown"
     },

@@ -54,7 +54,7 @@ spec:
       serviceAccountName: wiz-app-sa   # Requirement #5 (cluster-admin binding above)
       containers:
         - name: wiz-mongo-app
-          image: minookarthik/wiz-mongo-app:v5
+          image: minookarthik/wiz-mongo-app:v6
           imagePullPolicy: Always
           ports:
             - containerPort: 3000
@@ -71,6 +71,25 @@ spec:
 
           - name: MONGO_HOST_OS
             value: "Ubuntu 20.04 LTS"  # <--- put your actual Ubuntu version here
+
+          # Health probes to ensure MongoDB connectivity
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 2
+
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
